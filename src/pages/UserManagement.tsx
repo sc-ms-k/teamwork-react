@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { User, Plus, Trash2, PencilIcon, Search, SlidersHorizontal, Mail, Key, UserCircle, Shield, X } from 'lucide-react';
+import { User, Plus, Trash2, PencilIcon, Search, Mail, Key, UserCircle, Shield, X, DollarSign } from 'lucide-react';
 import { Transition } from '@headlessui/react';
 
 interface UserData {
@@ -10,6 +10,7 @@ interface UserData {
   email: string;
   role: string;
   created_at: string;
+  target_money: number;
 }
 
 interface ApiResponse {
@@ -31,7 +32,8 @@ const UserManagement = () => {
     name: '',
     email: '',
     password: '',
-    role: 'user'
+    role: 'user',
+    target_money: 0
   });
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +42,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get<ApiResponse>('http://localhost:3090/api/users', {
+      const res = await axios.get<ApiResponse>('http://localhost:5000/api/users', {
         withCredentials: true
       });
       
@@ -75,7 +77,7 @@ const UserManagement = () => {
     try {
       if (editingUser) {
         const res = await axios.put(
-          `http://localhost:3090/api/users/${editingUser.id}`,
+          `http://localhost:5000/api/users/${editingUser.id}`,
           formData,
           { withCredentials: true }
         );
@@ -86,7 +88,7 @@ const UserManagement = () => {
         }
       } else {
         const res = await axios.post(
-          'http://localhost:3090/api/users',
+          'http://localhost:5000/api/users',
           formData,
           { withCredentials: true }
         );
@@ -103,7 +105,8 @@ const UserManagement = () => {
         name: '',
         email: '',
         password: '',
-        role: 'user'
+        role: 'user',
+        target_money: 0
       });
       setShowForm(false);
       setEditingUser(null);
@@ -130,7 +133,7 @@ const UserManagement = () => {
     }
     
     try {
-      const res = await axios.delete(`http://localhost:3090/api/users/${id}`, {
+      const res = await axios.delete(`http://localhost:5000/api/users/${id}`, {
         withCredentials: true
       });
       
@@ -148,7 +151,18 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 dark:bg-gray-900">
+    <div className="container mx-auto px-4 py-8 dark:bg-gray-900 h-screen overflow-auto 
+                    [&::-webkit-scrollbar]:w-2 
+                    [&::-webkit-scrollbar-track]:bg-gray-100 
+                    [&::-webkit-scrollbar-track]:dark:bg-gray-800
+                    [&::-webkit-scrollbar-thumb]:bg-gray-300 
+                    [&::-webkit-scrollbar-thumb]:dark:bg-gray-600
+                    [&::-webkit-scrollbar-thumb]:rounded-full
+                    [&::-webkit-scrollbar-thumb]:border-4
+                    [&::-webkit-scrollbar-thumb]:border-transparent
+                    [&::-webkit-scrollbar-thumb]:bg-clip-padding
+                    [&::-webkit-scrollbar-thumb]:hover:bg-gray-400
+                    [&::-webkit-scrollbar-thumb]:dark:hover:bg-gray-500">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">User Management</h1>
@@ -161,7 +175,8 @@ const UserManagement = () => {
               name: '',
               email: '',
               password: '',
-              role: 'user'
+              role: 'user',
+              target_money: 0
             });
             setShowForm(true);
           }}
@@ -315,6 +330,26 @@ const UserManagement = () => {
                 )}
 
                 <div>
+                  <label htmlFor="target_money" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Target Money
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <DollarSign className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="target_money"
+                      type="number"
+                      value={formData.target_money}
+                      onChange={(e) => setFormData({ ...formData, target_money: parseFloat(e.target.value) })}
+                      className="pl-10 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Role *
                   </label>
@@ -377,19 +412,30 @@ const UserManagement = () => {
         ) : filteredUsers.length === 0 ? (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">No users found</div>
         ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredUsers.map((userData) => (
-              <div key={userData.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <User className="h-5 w-5 text-gray-400 mr-3" />
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">{userData.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{userData.email}</p>
+          <div className="max-h-[600px] overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-600">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900">User</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900">Role</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900">Target Money</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900">Created At</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredUsers.map((userData) => (
+                  <tr key={userData.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <User className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{userData.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{userData.email}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-1">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${userData.role === 'admin' 
                           ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200' 
@@ -398,34 +444,45 @@ const UserManagement = () => {
                       >
                         {userData.role}
                       </span>
-                    </div>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => {
-                        setEditingUser(userData);
-                        setFormData({
-                          name: userData.name,
-                          email: userData.email,
-                          password: '',
-                          role: userData.role
-                        });
-                        setShowForm(true);
-                      }}
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(userData.id)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        ${userData.target_money.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(userData.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-3">
+                        <button
+                          onClick={() => {
+                            setEditingUser(userData);
+                            setFormData({
+                              name: userData.name,
+                              email: userData.email,
+                              password: '',
+                              role: userData.role,
+                              target_money: userData.target_money
+                            });
+                            setShowForm(true);
+                          }}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(userData.id)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

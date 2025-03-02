@@ -81,7 +81,7 @@ const WorkReports = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3090/api/reports/${user?.id}`, {
+      const res = await axios.get(`http://localhost:5000/api/reports/${user?.id}`, {
         withCredentials: true
       });
       // Sort reports by date in descending order and convert working_hours to number
@@ -116,7 +116,7 @@ const WorkReports = () => {
   useEffect(() => {
     const fetchTargetTimes = async () => {
       try {
-        const res = await axios.get('http://localhost:3090/api/target-times', {
+        const res = await axios.get('http://localhost:5000/api/target-times', {
           withCredentials: true
         });
         setTargetTimes(res.data);
@@ -152,13 +152,13 @@ const WorkReports = () => {
       
       if (editingReport) {
         await axios.put(
-          `http://localhost:3090/api/reports/${editingReport.id}`,
+          `http://localhost:5000/api/reports/${editingReport.id}`,
           payload,
           { withCredentials: true }
         );
       } else {
         await axios.post(
-          'http://localhost:3090/api/reports',
+          'http://localhost:5000/api/reports',
           payload,
           { withCredentials: true }
         );
@@ -192,7 +192,7 @@ const WorkReports = () => {
     }
     
     try {
-      await axios.delete(`http://localhost:3090/api/reports/${id}`, {
+      await axios.delete(`http://localhost:5000/api/reports/${id}`, {
         withCredentials: true
       });
       
@@ -226,17 +226,6 @@ const WorkReports = () => {
           <p className="text-gray-600 dark:text-gray-400">Track your daily working hours</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            ) : (
-              <Sun className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center px-4 py-2 rounded-md transition-all duration-200 ${

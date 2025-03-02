@@ -160,15 +160,19 @@ router.get('/monthly/:year/:month', async (req, res) => {
         const { year, month } = req.params;
         const query = `
             SELECT 
-                t.user_name,
-                SUM(t.amount) as total_amount,
-                COUNT(*) as transaction_count,
-                u.target_money
-            FROM transactions t
-            LEFT JOIN users u ON t.user_name = u.name
-            WHERE YEAR(t.created_at) = ? 
-            AND MONTH(t.created_at) = ?
-            GROUP BY t.user_name, u.target_money
+                u.name as user_name,
+                u.target_money,
+                COALESCE(SUM(t.amount), 0) as total_amount,
+                COUNT(t.id) as transaction_count
+            FROM users u
+            LEFT JOIN (
+                SELECT *
+                FROM transactions
+                WHERE YEAR(transaction_date) = ? 
+                AND MONTH(transaction_date) = ?
+            ) t ON u.name = t.user_name
+            WHERE u.role = 'user'
+            GROUP BY u.name, u.target_money
             ORDER BY total_amount DESC
         `;
 
@@ -200,7 +204,10 @@ router.get('/monthly/:year/:month', async (req, res) => {
 // Add dashboard stats endpoint
 router.get('/dashboard-stats/:year/:month', async (req, res) => {
     try {
-        const { year, month } = req.params;
+        // Get current year and month
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // Adding 1 because getMonth() returns 0-11
 
         // Get total users
         const [userRows] = await pool.query(
@@ -214,26 +221,31 @@ router.get('/dashboard-stats/:year/:month', async (req, res) => {
         );
         const monthlyPlan = parseFloat(targetRows[0].monthlyPlan) || 0;
 
-        // Get current month's earnings and top user
+        // Get current month's earnings and top user using transaction_date
         const query = `
             SELECT 
                 t.user_name,
-                SUM(t.amount) as total_amount
+                SUM(t.amount) as total_amount,
+                COUNT(*) as transaction_count
             FROM transactions t
-            WHERE YEAR(t.created_at) = ? 
-            AND MONTH(t.created_at) = ?
+            LEFT JOIN users u ON t.user_name = u.name
+            WHERE YEAR(t.transaction_date) = ? 
+            AND MONTH(t.transaction_date) = ?
             GROUP BY t.user_name
             ORDER BY total_amount DESC
         `;
 
-        const [transactionRows] = await pool.query(query, [year, month]);
+        const [transactionRows] = await pool.query(query, [currentYear, currentMonth]);
         
         // Calculate total earnings and progress
         const totalEarnings = transactionRows.reduce((sum, row) => sum + parseFloat(row.total_amount), 0);
         const monthlyProgress = monthlyPlan > 0 ? ((totalEarnings / monthlyPlan) * 100).toFixed(1) : 0;
         
-        // Get top user (user with highest earnings this month)
-        const topUser = transactionRows.length > 0 ? transactionRows[0].user_name : 'N/A';
+        // Get top user (user with highest earnings this month based on transaction_date)
+        const topUser = transactionRows.length > 0 ? {
+            name: transactionRows[0].user_name,
+            amount: parseFloat(transactionRows[0].total_amount)
+        } : { name: 'N/A', amount: 0 };
 
         res.json({
             totalUsers,

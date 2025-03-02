@@ -220,7 +220,7 @@ export default function Transactions() {
   // Fetch transactions with enhanced error handling
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get('http://localhost:3090/api/transactions', {
+      const response = await axios.get('http://localhost:5000/api/transactions', {
         withCredentials: true
       });
       const formattedTransactions = response.data.map((transaction: any) => ({
@@ -243,7 +243,7 @@ export default function Transactions() {
   // Update the fetchUsers function
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:3090/api/transactions/users', {
+      const response = await axios.get('http://localhost:5000/api/transactions/users', {
         withCredentials: true
       });
       console.log(response.data)
@@ -273,12 +273,12 @@ export default function Transactions() {
       };
 
       if (isEditing && editingId) {
-        await axios.put(`http://localhost:3090/api/transactions/${editingId}`, transactionData, {
+        await axios.put(`http://localhost:5000/api/transactions/${editingId}`, transactionData, {
           withCredentials: true
         });
         notifySuccess('Transaction updated successfully');
       } else {
-        await axios.post('http://localhost:3090/api/transactions', transactionData, {
+        await axios.post('http://localhost:5000/api/transactions', transactionData, {
           withCredentials: true
         });
         notifySuccess('Transaction created successfully');
@@ -323,7 +323,7 @@ export default function Transactions() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
-        await axios.delete(`http://localhost:3090/api/transactions/${id}`, {
+        await axios.delete(`http://localhost:5000/api/transactions/${id}`, {
           withCredentials: true
         });
         notifySuccess('Transaction deleted successfully');
@@ -792,7 +792,9 @@ export default function Transactions() {
                     User Name
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -843,22 +845,24 @@ export default function Transactions() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {transaction.userName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(transaction)}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        <Edit2 className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(transaction.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          <Edit2 className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -868,14 +872,14 @@ export default function Transactions() {
 
       {/* Pagination */}
       <div className="mt-4 flex justify-between items-center">
-        <div className="text-sm text-gray-700">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTransactions.length)} of {filteredTransactions.length} entries
         </div>
         <div className="flex space-x-2">
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-md disabled:opacity-50"
+            className="px-4 py-2 border rounded-md disabled:opacity-50 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Previous
           </button>
@@ -883,8 +887,11 @@ export default function Transactions() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 border rounded-md ${currentPage === page ? 'bg-blue-600 text-white' : ''
-                }`}
+              className={`px-4 py-2 border rounded-md ${
+                currentPage === page 
+                  ? 'bg-blue-600 text-white border-blue-600 dark:border-blue-500' 
+                  : 'text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
             >
               {page}
             </button>
@@ -892,7 +899,7 @@ export default function Transactions() {
           <button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 border rounded-md disabled:opacity-50"
+            className="px-4 py-2 border rounded-md disabled:opacity-50 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Next
           </button>
